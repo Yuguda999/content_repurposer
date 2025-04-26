@@ -133,7 +133,8 @@ The system follows a modular, microservices-inspired architecture designed for s
 
 ## Technology Stack
 
-- **Backend Framework**: FastAPI
+### Backend
+- **Framework**: FastAPI
 - **Database**: PostgreSQL (production), SQLite (development)
 - **Message Queue**: Redis (development), RabbitMQ (production)
 - **Task Processing**: Celery
@@ -144,6 +145,15 @@ The system follows a modular, microservices-inspired architecture designed for s
 - **Monitoring**: Prometheus, Grafana
 - **Logging**: Structured JSON logging (ELK-compatible)
 - **Testing**: Pytest, TestClient
+
+### Frontend
+- **Framework**: React with TypeScript
+- **UI Library**: Material UI
+- **State Management**: React Query
+- **Routing**: React Router
+- **HTTP Client**: Axios
+- **Build Tool**: Vite
+- **Authentication**: JWT-based authentication
 
 ## Getting Started
 
@@ -226,6 +236,8 @@ DATABASE_URL=sqlite:///./content_repurposer.db
 
 ### Running Locally
 
+#### Backend
+
 1. Initialize the database:
    ```bash
    python -m scripts.migrate
@@ -239,14 +251,33 @@ DATABASE_URL=sqlite:///./content_repurposer.db
 3. Start the API server:
    ```bash
    cd src
-   uvicorn content_repurposer.main:app --host 0.0.0.0 --port 8000 --reload
+   uvicorn content_repurposer.main:app --host 0.0.0.0 --port 8001 --reload
    ```
 
-4. In a separate terminal, start the Celery worker (optional for development):
+4. In a separate terminal, start the Celery worker:
    ```bash
    cd src
    celery -A content_repurposer.workers.celery_app worker --loglevel=info
    ```
+
+#### Frontend
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Access the frontend at http://localhost:3000
 
 ### Running with Docker
 
@@ -435,11 +466,22 @@ content-repurposer/
 ├── README.md                        # Project documentation
 ├── docker-compose.yml               # Docker Compose configuration
 ├── requirements.txt                 # Python dependencies
+├── frontend/                        # React frontend application
+│   ├── src/                         # Frontend source code
+│   │   ├── components/              # Reusable UI components
+│   │   ├── pages/                   # Page components
+│   │   ├── services/                # API services
+│   │   ├── hooks/                   # Custom React hooks
+│   │   ├── types/                   # TypeScript type definitions
+│   │   └── utils/                   # Utility functions
+│   ├── public/                      # Static assets
+│   ├── package.json                 # Frontend dependencies
+│   └── vite.config.ts               # Vite configuration
 ├── scripts/                         # Utility scripts
 │   ├── migrate.sh                   # Database migration script
 │   ├── seed.sh                      # Database seeding script
 │   └── test_agents.py               # OpenAI agents test script
-├── src/                             # Source code
+├── src/                             # Backend source code
 │   └── content_repurposer/          # Main package
 │       ├── __init__.py              # Package initialization
 │       ├── main.py                  # FastAPI application entrypoint

@@ -1,7 +1,10 @@
 import time
+import os
+from pathlib import Path
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import prometheus_client
 from prometheus_client import Counter, Histogram
 
@@ -61,10 +64,10 @@ async def metrics_middleware(request: Request, call_next):
     # Get request details
     method = request.method
     path = request.url.path
-    
+
     # Start timer
     start_time = time.time()
-    
+
     # Process request
     try:
         response = await call_next(request)
@@ -76,12 +79,12 @@ async def metrics_middleware(request: Request, call_next):
             status_code=status_code,
             content={"detail": "Internal server error"},
         )
-    
+
     # Record metrics
     duration = time.time() - start_time
     REQUEST_COUNT.labels(method, path, status_code).inc()
     REQUEST_LATENCY.labels(method, path).observe(duration)
-    
+
     # Log request
     logger.info(
         "Request processed",
@@ -91,7 +94,7 @@ async def metrics_middleware(request: Request, call_next):
         duration=duration,
         request_id=request.state.request_id if hasattr(request.state, "request_id") else None,
     )
-    
+
     return response
 
 
@@ -115,6 +118,20 @@ async def health_check():
 
 # Include API routes
 app.include_router(router, prefix="/api")
+
+
+# Mount static files directory for serving images
+storage_path = Path(os.path.join(os.getcwd(), "storage"))
+if not storage_path.exists():
+    storage_path = Path(os.path.join(os.getcwd(), "..", "storage"))
+if not storage_path.exists():
+    storage_path = Path(os.path.join(os.getcwd(), "src", "storage"))
+if not storage_path.exists():
+    logger.warning(f"Storage directory not found at {storage_path}, creating it")
+    storage_path.mkdir(parents=True, exist_ok=True)
+
+logger.info(f"Mounting storage directory: {storage_path}")
+app.mount("/storage", StaticFiles(directory=str(storage_path)), name="storage")
 
 
 # Startup event
