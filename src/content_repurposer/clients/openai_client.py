@@ -62,12 +62,10 @@ class OpenAIClient:
             # Create parameters dict
             params = {
                 "model": model or self.model,
-                "input": messages,
+                "messages": messages,
                 "temperature": temperature,
+                "max_tokens": max_tokens,
             }
-
-            # The max_tokens parameter is not supported in the responses.create() method
-            # Instead, we need to estimate the response size and handle rate limits with retries
 
             # Implement exponential backoff for rate limit handling
             max_retries = 5
@@ -76,7 +74,7 @@ class OpenAIClient:
 
             while True:
                 try:
-                    response = self.client.responses.create(**params)
+                    response = self.client.chat.completions.create(**params)
                     break  # If successful, break out of the retry loop
                 except Exception as e:
                     if "rate limit" in str(e).lower() and retry_count < max_retries:
@@ -89,7 +87,7 @@ class OpenAIClient:
                         # If it's not a rate limit error or we've exceeded max retries, re-raise
                         raise
 
-            return response.output_text
+            return response.choices[0].message.content
         except Exception as e:
             logger.error("Error generating text", error=str(e))
             raise
@@ -118,9 +116,10 @@ class OpenAIClient:
         try:
             # Create parameters dict based on the model
             params = {
-                "model": "dall-e-3",  # Force DALL-E 3 model
+                "model": model or "dall-e-3",  # Use provided model or default to DALL-E 3
                 "prompt": prompt,
                 "size": size or settings.OPENAI_IMAGE_SIZE,
+                "quality": quality or settings.OPENAI_IMAGE_QUALITY,
                 "n": n,
             }
 
@@ -181,8 +180,8 @@ class OpenAIClient:
             # Create parameters dict
             params = {
                 "model": model or self.model,
-                "input": messages,
-                "tools": functions,
+                "messages": messages,
+                "functions": functions,
                 "temperature": temperature,
             }
 
@@ -193,7 +192,7 @@ class OpenAIClient:
 
             while True:
                 try:
-                    response = self.client.responses.create(**params)
+                    response = self.client.chat.completions.create(**params)
                     break  # If successful, break out of the retry loop
                 except Exception as e:
                     if "rate limit" in str(e).lower() and retry_count < max_retries:
@@ -207,16 +206,16 @@ class OpenAIClient:
                         raise
 
             # Check if the model called a function
-            if response.output and len(response.output) > 0:
-                for output in response.output:
-                    if output.type == "function_call":
-                        return {
-                            "name": output.name,
-                            "arguments": json.loads(output.arguments)
-                        }
+            if response.choices and len(response.choices) > 0:
+                message = response.choices[0].message
+                if hasattr(message, 'function_call') and message.function_call:
+                    return {
+                        "name": message.function_call.name,
+                        "arguments": json.loads(message.function_call.arguments)
+                    }
 
             # If no function was called, return the text response
-            return {"text": response.output_text}
+            return {"text": response.choices[0].message.content}
         except Exception as e:
             logger.error("Error with function calling", error=str(e))
             raise

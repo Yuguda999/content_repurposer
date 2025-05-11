@@ -48,7 +48,7 @@ class ContentOutput(BaseModel):
     output_metadata: Optional[Dict[str, Any]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class JobResponse(BaseModel):
@@ -64,7 +64,7 @@ class JobResponse(BaseModel):
     outputs: List[ContentOutput] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class JobCreate(BaseModel):
@@ -91,7 +91,7 @@ class UserResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Token(BaseModel):
